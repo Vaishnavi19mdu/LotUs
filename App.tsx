@@ -15,6 +15,7 @@ import { MyEventsPage } from './pages/MyEvents';
 import { ConnectionsPage } from './pages/Connections';
 import { HiddenGemsPage } from './pages/HiddenGems';
 import { EventParticipantsPage } from './pages/EventParticipants';
+import { ProfilePage } from './pages/Profile';
 import { AuthProvider, useAuth } from './context/AuthContext';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -45,7 +46,7 @@ const App: React.FC = () => {
             <Route path="my-events" element={<MyEventsPage />} />
             <Route path="lotus-match" element={<LotUsMatchPage />} />
             <Route path="connections" element={<ConnectionsPage />} />
-            <Route path="profile" element={<Placeholder title="My Profile" />} />
+            <Route path="profile" element={<ProfilePage />} />
           </Route>
 
           <Route path="*" element={<Navigate to="/" replace />} />

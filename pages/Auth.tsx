@@ -118,6 +118,8 @@ export const SignupPage: React.FC = () => {
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.name.trim()) { setError('Please enter your full name'); return; }
+    if (!form.email.trim()) { setError('Please enter your email'); return; }
     if (form.password !== form.confirmPassword) { setError('Passwords do not match'); return; }
     if (form.password.length < 6) { setError('Password must be at least 6 characters'); return; }
     setLoading(true);
@@ -127,16 +129,16 @@ export const SignupPage: React.FC = () => {
       const uid = userCred.user.uid;
 
       await setDoc(doc(db, 'users', uid), {
-        name: form.name,
-        email: form.email,
-        phone: form.phone,
-        gender: form.gender,
-        role: form.role,
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim() || '',
+        gender: form.gender || '',
+        role: form.role || 'participant',
         bio: '',
         skills: [],
         interests: [],
         tags: [],
-        avatar: avatarBase64,
+        avatar: avatarBase64 || '',
         createdAt: new Date().toISOString(),
       });
 

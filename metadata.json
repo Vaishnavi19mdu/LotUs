@@ -1,0 +1,8 @@
+{
+  "name": "LotUs",
+  "description": "An AI-powered collaboration and matching platform for creators, brands, and communities to grow together through intelligent compatibility analysis and pitch generation.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ]
+}

@@ -13,8 +13,8 @@ import {
   BarChart3,
   BellRing,
   FolderOpen,
-  Gem
-} from 'lucide-react';
+  Gem,
+  Mail} from 'lucide-react';
 import { LotusLogo } from './Icons';
 import { BackButton } from './UI';
 import { useAuth } from '../context/AuthContext';
@@ -58,7 +58,8 @@ export const DashboardLayout: React.FC = () => {
     { to: '/dashboard/browse', label: 'Browse Events', icon: <Calendar size={18} /> },
     { to: '/dashboard/my-events', label: 'My Events', icon: <FolderOpen size={18} /> },
     { to: '/dashboard/lotus-match', label: 'LotUs Match', icon: <Sparkles size={18} /> },
-    { to: '/dashboard/connections', label: 'Team Invites', icon: <Users size={18} /> },
+    { to: '/dashboard/connections', label: 'Teams', icon: <Users size={18} /> },
+    { to: '/dashboard/messages', label: 'Messages', icon: <Mail size={18} /> },
     { to: '/dashboard/announcements', label: 'Announcements', icon: <BellRing size={18} /> },
   ];
 

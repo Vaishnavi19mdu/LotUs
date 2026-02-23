@@ -13,6 +13,7 @@ import { AnnouncementsPage } from './pages/Announcements';
 import { SettingsPage } from './pages/Settings';
 import { MyEventsPage } from './pages/MyEvents';
 import { ConnectionsPage } from './pages/Connections';
+import { MessagesPage } from './pages/Messages';
 import { HiddenGemsPage } from './pages/HiddenGems';
 import { EventParticipantsPage } from './pages/EventParticipants';
 import { ProfilePage } from './pages/Profile';
@@ -46,6 +47,7 @@ const App: React.FC = () => {
             <Route path="my-events" element={<MyEventsPage />} />
             <Route path="lotus-match" element={<LotUsMatchPage />} />
             <Route path="connections" element={<ConnectionsPage />} />
+            <Route path="messages" element={<MessagesPage />} />
             <Route path="profile" element={<ProfilePage />} />
           </Route>
 

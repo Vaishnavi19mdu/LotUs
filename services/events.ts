@@ -1,5 +1,5 @@
 import { db } from '../firebase';
-import { collection, addDoc, getDocs, doc, updateDoc, arrayUnion, getDoc } from 'firebase/firestore';
+import { collection, addDoc, getDocs, doc, updateDoc, deleteDoc, arrayUnion, arrayRemove, getDoc, query, where } from 'firebase/firestore';
 import { Event } from '../types';
 import { createRegistrationNotification } from './notifications';
 
@@ -31,20 +31,16 @@ export const registerForEvent = async (
   userName: string,
   userAvatar?: string
 ) => {
-  // 1. Get event data to find creator and name
   const eventRef = doc(db, 'events', eventId);
   const eventSnap = await getDoc(eventRef);
   const eventData = eventSnap.data();
-
   if (!eventData) throw new Error('Event not found');
 
-  // 2. Update the event registration count and list
   await updateDoc(eventRef, {
     registeredUserIds: arrayUnion(userId),
     participantsCount: (eventData.participantsCount || 0) + 1
   });
 
-  // 3. Notify the event creator (skip if they're registering their own event)
   const createdBy = eventData.createdBy;
   if (createdBy && createdBy !== userId) {
     await createRegistrationNotification({
@@ -57,7 +53,6 @@ export const registerForEvent = async (
     });
   }
 
-  // 4. Always notify superadmin (uses special 'superadmin' recipientId)
   await createRegistrationNotification({
     recipientId: 'superadmin',
     eventId,
@@ -66,4 +61,47 @@ export const registerForEvent = async (
     registeredUserName: userName,
     registeredUserAvatar: userAvatar,
   });
+};
+
+export const unregisterForEvent = async (eventId: string, userId: string) => {
+  // 1. Remove from event
+  const eventRef = doc(db, 'events', eventId);
+  const eventSnap = await getDoc(eventRef);
+  const eventData = eventSnap.data();
+  if (!eventData) throw new Error('Event not found');
+
+  await updateDoc(eventRef, {
+    registeredUserIds: arrayRemove(userId),
+    participantsCount: Math.max(0, (eventData.participantsCount || 1) - 1)
+  });
+
+  // 2. Handle team cleanup
+  const teamsSnap = await getDocs(
+    query(collection(db, 'teams'), where('eventId', '==', eventId))
+  );
+
+  for (const teamDoc of teamsSnap.docs) {
+    const team = teamDoc.data();
+
+    // If user is the leader → delete the whole team
+    if (team.leaderId === userId) {
+      await deleteDoc(teamDoc.ref);
+      continue;
+    }
+
+    // If user is a member → remove them
+    if (team.members?.includes(userId)) {
+      await updateDoc(teamDoc.ref, {
+        members: arrayRemove(userId)
+      });
+    }
+
+    // If user had a pending invite or join request → clean those up too
+    if (team.invites?.includes(userId)) {
+      await updateDoc(teamDoc.ref, { invites: arrayRemove(userId) });
+    }
+    if (team.joinRequests?.includes(userId)) {
+      await updateDoc(teamDoc.ref, { joinRequests: arrayRemove(userId) });
+    }
+  }
 };

@@ -192,8 +192,17 @@ export const NotificationBell: React.FC = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs text-charcoal font-semibold leading-snug">
-                          <span className="text-rose">{n.registeredUserName}</span> registered for{' '}
-                          <span className="font-bold">{n.eventName}</span>
+                          {n.type === 'team_invite' ? (
+                            <><span className="text-rose">{(n as any).inviterName}</span> invited you to join <span className="font-bold">{(n as any).teamName}</span> for <span className="font-bold">{n.eventName}</span></>
+                          ) : n.type === 'join_request' ? (
+                            <><span className="text-rose">{(n as any).requesterName}</span> requested to join your team <span className="font-bold">{(n as any).teamName}</span></>
+                          ) : n.type === 'join_accepted' ? (
+                            <><span className="text-rose">{(n as any).leaderName}</span> accepted your request to join <span className="font-bold">{(n as any).teamName}</span> 🎉</>
+                          ) : n.type === 'message' ? (
+                            <><span className="text-rose">{(n as any).senderName}</span> sent you a message{(n as any).eventName ? <> for <span className="font-bold">{(n as any).eventName}</span></> : ''}</>
+                          ) : (
+                            <><span className="text-rose">{n.registeredUserName}</span> registered for{' '}<span className="font-bold">{n.eventName}</span></>
+                          )}
                         </p>
                         <div className="flex items-center gap-2 mt-1">
                           <Calendar size={10} className="text-gray-400" />

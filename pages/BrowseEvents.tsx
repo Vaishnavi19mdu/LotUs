@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Card, Badge, Button, Input, BackButton } from '../components/UI';
 import { Event, EventType, Role } from '../types';
-import { getEvents, registerForEvent } from '../services/events';
+import { getEvents, registerForEvent, unregisterForEvent } from '../services/events';
 import { useAuth } from '../context/AuthContext';
 import { Search, Filter, Calendar, MapPin, Users, Clock, AlertCircle, CheckCircle } from 'lucide-react';
 
@@ -52,6 +52,21 @@ export const BrowseEventsPage: React.FC = () => {
     }
   };
 
+  const handleUnregister = async (eventId: string) => {
+    if (!currentUser) return;
+    if (!confirm('Are you sure you want to unregister?')) return;
+    try {
+      await unregisterForEvent(eventId, currentUser.id);
+      setEvents(prev => prev.map(e => e.id === eventId ? {
+        ...e,
+        participantsCount: Math.max(0, e.participantsCount - 1),
+        registeredUserIds: e.registeredUserIds.filter(id => id !== currentUser.id)
+      } : e));
+    } catch {
+      alert('Failed to unregister. Please try again.');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-charcoal text-cream overflow-x-hidden">
       <div className="max-w-7xl mx-auto px-6 py-12 space-y-10">
@@ -97,6 +112,7 @@ export const BrowseEventsPage: React.FC = () => {
                 <EventDiscoveryCard
                   event={event}
                   onRegister={() => handleRegister(event.id)}
+                  onUnregister={() => handleUnregister(event.id)}
                   currentUser={currentUser}
                 />
               </motion.div>
@@ -119,7 +135,7 @@ export const BrowseEventsPage: React.FC = () => {
   );
 };
 
-const EventDiscoveryCard: React.FC<{ event: Event; onRegister: () => void; currentUser: any }> = ({ event, onRegister, currentUser }) => {
+const EventDiscoveryCard: React.FC<{ event: Event; onRegister: () => void; onUnregister: () => void; currentUser: any }> = ({ event, onRegister, onUnregister, currentUser }) => {
   const navigate = useNavigate();
   const isAdminOrSuper = currentUser?.role === Role.ADMIN || currentUser?.role === Role.SUPERADMIN;
   const isRegistered = currentUser && event.registeredUserIds.includes(currentUser.id);
@@ -180,8 +196,16 @@ const EventDiscoveryCard: React.FC<{ event: Event; onRegister: () => void; curre
             Manage Event
           </Button>
         ) : isRegistered ? (
-          <div className="w-full flex items-center justify-center gap-2 py-4 bg-green-500/10 text-green-600 rounded-full font-bold text-sm border border-green-500/20">
-            <CheckCircle size={18} /> You are Registered
+          <div className="w-full space-y-2">
+            <div className="flex items-center justify-center gap-2 py-3 bg-green-500/10 text-green-600 rounded-full font-bold text-sm border border-green-500/20">
+              <CheckCircle size={18} /> You are Registered
+            </div>
+            <button
+              onClick={onUnregister}
+              className="w-full text-center text-[10px] font-bold uppercase tracking-widest text-gray-400 hover:text-red-400 transition-colors py-1"
+            >
+              Unregister
+            </button>
           </div>
         ) : (
           <Button

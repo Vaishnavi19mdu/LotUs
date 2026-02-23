@@ -73,3 +73,115 @@ export const markAllAsRead = async (notifications: Notification[]) => {
     notifications.filter(n => !n.read).map(n => markAsRead(n.id))
   );
 };
+
+export const createTeamInviteNotification = async ({
+  recipientId,
+  inviterName,
+  inviterId,
+  inviterAvatar,
+  eventId,
+  eventName,
+  teamName,
+}: {
+  recipientId: string;
+  inviterName: string;
+  inviterId: string;
+  inviterAvatar?: string;
+  eventId: string;
+  eventName: string;
+  teamName: string;
+}) => {
+  await addDoc(collection(db, 'notifications'), {
+    recipientId,
+    type: 'team_invite',
+    inviterName,
+    inviterId,
+    inviterAvatar: inviterAvatar || '',
+    eventId,
+    eventName,
+    teamName,
+    read: false,
+    createdAt: new Date().toISOString(),
+  });
+};
+
+export const createJoinRequestNotification = async ({
+  recipientId,
+  requesterName,
+  requesterId,
+  requesterAvatar,
+  teamName,
+  eventName,
+  teamId,
+}: {
+  recipientId: string;
+  requesterName: string;
+  requesterId: string;
+  requesterAvatar?: string;
+  teamName: string;
+  eventName: string;
+  teamId: string;
+}) => {
+  await addDoc(collection(db, 'notifications'), {
+    recipientId,
+    type: 'join_request',
+    requesterName,
+    requesterId,
+    requesterAvatar: requesterAvatar || '',
+    teamName,
+    eventName,
+    teamId,
+    read: false,
+    createdAt: new Date().toISOString(),
+  });
+};
+
+export const createJoinAcceptedNotification = async ({
+  recipientId,
+  leaderName,
+  teamName,
+  eventName,
+}: {
+  recipientId: string;
+  leaderName: string;
+  teamName: string;
+  eventName: string;
+}) => {
+  await addDoc(collection(db, 'notifications'), {
+    recipientId,
+    type: 'join_accepted',
+    leaderName,
+    teamName,
+    eventName,
+    read: false,
+    createdAt: new Date().toISOString(),
+  });
+};
+
+export const createMessageNotification = async ({
+  recipientId,
+  senderName,
+  senderId,
+  senderAvatar,
+  eventName,
+  messageId,
+}: {
+  recipientId: string;
+  senderName: string;
+  senderId: string;
+  senderAvatar?: string;
+  eventName?: string;
+  messageId: string;
+}) => {
+  await addDoc(collection(db, 'notifications'), {
+    recipientId,
+    type: 'message',
+    senderName,
+    senderId,
+    senderAvatar: senderAvatar || '',
+    eventName: eventName || '',
+    messageId,
+    read: false,
+    createdAt: new Date().toISOString(),
+  });
+};

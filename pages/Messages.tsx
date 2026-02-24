@@ -27,6 +27,7 @@ export const MessagesPage: React.FC = () => {
   const [view, setView] = useState<View>('list');
 
   const [inbox, setInbox] = useState<Message[]>([]);
+  const [sentRequests, setSentRequests] = useState<Message[]>([]);
   const [selectedRequest, setSelectedRequest] = useState<Message | null>(null);
   const [addingToTeam, setAddingToTeam] = useState(false);
   const [addedSenders, setAddedSenders] = useState<Set<string>>(new Set());
@@ -51,11 +52,13 @@ export const MessagesPage: React.FC = () => {
 
   const fetchAll = async () => {
     if (!currentUser) return;
-    const [inc, users, contactIds] = await Promise.all([
+    const [inc, outgoing, users, contactIds] = await Promise.all([
       getMessagesForUser(currentUser.id),
+      getSentMessagesForUser(currentUser.id),
       getAllUsers(),
       getAcceptedContacts(currentUser.id),
     ]);
+    setSentRequests(outgoing);
     const others = users.filter(u => u.id !== currentUser.id);
     setAllUsers(others);
     setInbox(inc);
@@ -294,42 +297,86 @@ export const MessagesPage: React.FC = () => {
       )}
 
       {tab === 'requests' && (
-        inbox.length === 0 ? (
-          <div className="bg-[#fdf6f0] rounded-3xl p-16 border border-rose/10 text-center space-y-3">
-            <Mail size={40} className="mx-auto text-rose/20" />
-            <p className="text-gray-400">No message requests yet.</p>
-          </div>
-        ) : (
+        <div className="space-y-6">
+          {/* Received */}
           <div className="space-y-2">
-            {inbox.map((msg, idx) => (
-              <motion.div key={msg.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}>
-                <div onClick={() => handleOpenRequest(msg)}
-                  className={`bg-[#fdf6f0] rounded-2xl p-4 border cursor-pointer hover:shadow-md transition-all flex items-start gap-4 ${!msg.read && msg.status === 'pending' ? 'border-rose/40' : 'border-rose/10'}`}>
-                  <div className="w-10 h-10 rounded-full bg-rose/10 border-2 border-rose/20 flex items-center justify-center overflow-hidden shrink-0">
-                    {msg.senderAvatar ? <img src={msg.senderAvatar} className="w-full h-full object-cover" alt="" />
-                      : <span className="text-rose font-bold text-sm">{msg.senderName?.[0]?.toUpperCase()}</span>}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <p className="font-bold text-charcoal text-sm flex items-center gap-2">
-                        {msg.senderName}
-                        {!msg.read && msg.status === 'pending' && <span className="w-2 h-2 bg-rose rounded-full" />}
-                      </p>
-                      <span className="text-[10px] text-gray-400">{new Date(msg.createdAt).toLocaleDateString()}</span>
+            <p className="text-xs font-bold uppercase tracking-widest text-gray-400 flex items-center gap-2">
+              <span className="w-2 h-2 bg-rose rounded-full inline-block" /> Received
+            </p>
+            {inbox.length === 0 ? (
+              <div className="bg-[#fdf6f0] rounded-2xl p-8 border border-rose/10 text-center">
+                <p className="text-gray-400 text-sm">No received requests.</p>
+              </div>
+            ) : (
+              inbox.map((msg, idx) => (
+                <motion.div key={msg.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}>
+                  <div onClick={() => handleOpenRequest(msg)}
+                    className={`bg-[#fdf6f0] rounded-2xl p-4 border cursor-pointer hover:shadow-md transition-all flex items-start gap-4 ${!msg.read && msg.status === 'pending' ? 'border-rose/40' : 'border-rose/10'}`}>
+                    <div className="w-10 h-10 rounded-full bg-rose/10 border-2 border-rose/20 flex items-center justify-center overflow-hidden shrink-0">
+                      {msg.senderAvatar ? <img src={msg.senderAvatar} className="w-full h-full object-cover" alt="" />
+                        : <span className="text-rose font-bold text-sm">{msg.senderName?.[0]?.toUpperCase()}</span>}
                     </div>
-                    {msg.eventName && <div className="flex items-center gap-1 text-[10px] text-rose font-bold mt-0.5"><Calendar size={9} />{msg.eventName}</div>}
-                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">{msg.content}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <p className="font-bold text-charcoal text-sm flex items-center gap-2">
+                          {msg.senderName}
+                          {!msg.read && msg.status === 'pending' && <span className="w-2 h-2 bg-rose rounded-full" />}
+                        </p>
+                        <span className="text-[10px] text-gray-400">{new Date(msg.createdAt).toLocaleDateString()}</span>
+                      </div>
+                      {msg.eventName && <div className="flex items-center gap-1 text-[10px] text-rose font-bold mt-0.5"><Calendar size={9} />{msg.eventName}</div>}
+                      <p className="text-xs text-gray-500 mt-1 line-clamp-2">{msg.content}</p>
+                    </div>
+                    <div className="shrink-0">
+                      {msg.status === 'accepted' && <span className="text-[10px] bg-emerald-50 text-emerald-600 font-bold px-2 py-1 rounded-full">Accepted</span>}
+                      {msg.status === 'rejected' && <span className="text-[10px] bg-red-50 text-red-400 font-bold px-2 py-1 rounded-full">Rejected</span>}
+                      {msg.status === 'pending' && <span className="text-[10px] bg-rose/10 text-rose font-bold px-2 py-1 rounded-full flex items-center gap-1">View <ChevronRight size={10} /></span>}
+                    </div>
                   </div>
-                  <div className="shrink-0">
-                    {msg.status === 'accepted' && <span className="text-[10px] bg-emerald-50 text-emerald-600 font-bold px-2 py-1 rounded-full">Accepted</span>}
-                    {msg.status === 'rejected' && <span className="text-[10px] bg-red-50 text-red-400 font-bold px-2 py-1 rounded-full">Rejected</span>}
-                    {msg.status === 'pending' && <span className="text-[10px] bg-rose/10 text-rose font-bold px-2 py-1 rounded-full flex items-center gap-1">View <ChevronRight size={10} /></span>}
-                  </div>
-                </div>
-              </motion.div>
-            ))}
+                </motion.div>
+              ))
+            )}
           </div>
-        )
+
+          {/* Sent */}
+          <div className="space-y-2">
+            <p className="text-xs font-bold uppercase tracking-widest text-gray-400 flex items-center gap-2">
+              <span className="w-2 h-2 bg-gray-300 rounded-full inline-block" /> Sent
+            </p>
+            {sentRequests.length === 0 ? (
+              <div className="bg-[#fdf6f0] rounded-2xl p-8 border border-rose/10 text-center">
+                <p className="text-gray-400 text-sm">No sent requests.</p>
+              </div>
+            ) : (
+              sentRequests.map((msg, idx) => {
+                const recipient = allUsers.find(u => u.id === msg.recipientId);
+                return (
+                  <motion.div key={msg.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.04 }}>
+                    <div className="bg-[#fdf6f0] rounded-2xl p-4 border border-rose/10 flex items-start gap-4">
+                      <div className="w-10 h-10 rounded-full bg-rose/10 border-2 border-rose/20 flex items-center justify-center overflow-hidden shrink-0">
+                        {(recipient as any)?.avatar ? <img src={(recipient as any).avatar} className="w-full h-full object-cover" alt="" />
+                          : <span className="text-rose font-bold text-sm">{recipient?.name?.[0]?.toUpperCase() || '?'}</span>}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="font-bold text-charcoal text-sm">To: {recipient?.name || 'Unknown'}</p>
+                          <span className="text-[10px] text-gray-400">{new Date(msg.createdAt).toLocaleDateString()}</span>
+                        </div>
+                        {msg.eventName && <div className="flex items-center gap-1 text-[10px] text-rose font-bold mt-0.5"><Calendar size={9} />{msg.eventName}</div>}
+                        <p className="text-xs text-gray-500 mt-1 line-clamp-2">{msg.content}</p>
+                      </div>
+                      <div className="shrink-0">
+                        {msg.status === 'accepted' && <span className="text-[10px] bg-emerald-50 text-emerald-600 font-bold px-2 py-1 rounded-full">Accepted ✓</span>}
+                        {msg.status === 'rejected' && <span className="text-[10px] bg-red-50 text-red-400 font-bold px-2 py-1 rounded-full">Rejected</span>}
+                        {msg.status === 'pending' && <span className="text-[10px] bg-amber-50 text-amber-500 font-bold px-2 py-1 rounded-full">Pending...</span>}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })
+            )}
+          </div>
+        </div>
       )}
 
       {/* Request Detail Modal */}

@@ -17,9 +17,32 @@ export const DashboardOverview: React.FC = () => {
   const [events, setEvents] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
   const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
+  const [myTeamsCount, setMyTeamsCount] = useState(0);
+  const [engagementScore, setEngagementScore] = useState(0);
 
   useEffect(() => {
-    getEvents().then(setEvents);
+    getEvents().then(evts => {
+      setEvents(evts);
+      if (currentUser) {
+        // Engagement = mix of: registered events, profile completeness, teams
+        const registeredCount = evts.filter(e => e.registeredUserIds?.includes(currentUser.id)).length;
+        const hasAvatar = (currentUser as any).avatar ? 10 : 0;
+        const hasBio = (currentUser as any).bio ? 10 : 0;
+        const hasSkills = ((currentUser as any).skills?.length || 0) > 0 ? 15 : 0;
+        const hasInterests = ((currentUser as any).interests?.length || 0) > 0 ? 10 : 0;
+        const eventScore = Math.min(registeredCount * 15, 40);
+        const base = 15; // base for just being here
+        const score = Math.min(base + hasAvatar + hasBio + hasSkills + hasInterests + eventScore, 100);
+        setEngagementScore(score);
+      }
+    });
+    // Fetch real team count + engagement score
+    if (currentUser) {
+      getDocs(collection(db, 'teams')).then(snap => {
+        const count = snap.docs.filter(d => d.data().members?.includes(currentUser.id)).length;
+        setMyTeamsCount(count);
+      });
+    }
     // Fetch real announcements
     getDocs(query(collection(db, 'announcements'), orderBy('date', 'desc'), limit(3)))
       .then(snap => setAnnouncements(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
@@ -81,7 +104,7 @@ export const DashboardOverview: React.FC = () => {
             </div>
           </div>
           <div className="mt-8 sm:mt-0 flex flex-col items-center gap-2 relative z-10">
-            <ScoreCircle score={88} size={120} />
+            <ScoreCircle score={engagementScore} size={120} />
             <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Platform Engagement</p>
           </div>
         </Card>
@@ -95,7 +118,7 @@ export const DashboardOverview: React.FC = () => {
           <StatCard
             icon={isAdmin ? <Users className="text-rose" /> : <Sparkles className="text-rose" />}
             label={isAdmin ? 'Total Participants' : 'Team Matches'}
-            value={isAdmin ? totalParticipants : 12}
+            value={isAdmin ? totalParticipants : myTeamsCount}
           />
           <StatCard
             icon={<Clock className="text-rose" />}

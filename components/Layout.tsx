@@ -51,6 +51,7 @@ export const DashboardLayout: React.FC = () => {
     { to: '/dashboard/analytics', label: 'Analytics', icon: <BarChart3 size={18} /> },
     { to: '/dashboard/hidden-gems', label: 'Hidden Gems', icon: <Gem size={18} /> },
     { to: '/dashboard/announcements', label: 'Announcements', icon: <BellRing size={18} /> },
+    { to: '/dashboard/messages', label: 'Messages', icon: <Mail size={18} /> },
   ];
 
   const participantMenu = [

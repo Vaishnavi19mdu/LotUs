@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell, X, Calendar, ChevronRight, CheckCheck, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { Role } from '../types';
@@ -27,6 +28,7 @@ interface UserProfile {
 
 export const NotificationBell: React.FC = () => {
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const isSuperAdmin = currentUser?.role === Role.SUPERADMIN;
 
   const [open, setOpen] = useState(false);
@@ -69,6 +71,22 @@ export const NotificationBell: React.FC = () => {
       await markAsRead(notification.id);
       setNotifications(prev => prev.map(n => n.id === notification.id ? { ...n, read: true } : n));
     }
+
+    // Message notifications → go to messages page
+    if (notification.type === 'message') {
+      setOpen(false);
+      navigate('/dashboard/messages');
+      return;
+    }
+
+    // Team notifications → go to connections page
+    if (notification.type === 'team_invite' || notification.type === 'join_request' || notification.type === 'join_accepted') {
+      setOpen(false);
+      navigate('/dashboard/connections');
+      return;
+    }
+
+    // Registration notifications → show profile
     setLoadingProfile(true);
     try {
       const snap = await getDoc(doc(db, 'users', notification.registeredUserId));

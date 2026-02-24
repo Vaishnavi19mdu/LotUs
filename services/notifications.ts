@@ -10,7 +10,7 @@ import {
 export interface Notification {
   id: string;
   recipientId: string;
-  type: 'registration';
+  type: 'registration' | 'team_invite' | 'join_request' | 'join_accepted' | 'message';
   eventId: string;
   eventName: string;
   registeredUserId: string;

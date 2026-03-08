@@ -6,9 +6,16 @@ import { signUp, logIn } from '../services/auth';
 import { db } from '../firebase';
 import { doc, setDoc } from 'firebase/firestore';
 import { Role } from '../types';
-import { Mail, Lock, User, Phone, Eye, EyeOff, Camera, Briefcase, Users } from 'lucide-react';
+import { Mail, Lock, User, Phone, Eye, EyeOff, Camera, Briefcase, Users, CheckCircle, XCircle } from 'lucide-react';
 
 const GENDER_OPTIONS = ['Male', 'Female', 'Other', 'Prefer not to say'];
+
+const getPasswordStrength = (password: string) => [
+  { label: 'At least 9 characters', met: password.length >= 9 },
+  { label: 'One uppercase letter', met: /[A-Z]/.test(password) },
+  { label: 'One number', met: /[0-9]/.test(password) },
+  { label: 'One special character', met: /[^A-Za-z0-9]/.test(password) },
+];
 
 // ─── Login ────────────────────────────────────────────────────────────────────
 export const LoginPage: React.FC = () => {
@@ -97,6 +104,7 @@ export const SignupPage: React.FC = () => {
   const [avatarPreview, setAvatarPreview] = useState<string>('');
   const [avatarBase64, setAvatarBase64] = useState<string>('');
   const [showPw, setShowPw] = useState(false);
+  const [passwordFocused, setPasswordFocused] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -121,7 +129,10 @@ export const SignupPage: React.FC = () => {
     if (!form.name.trim()) { setError('Please enter your full name'); return; }
     if (!form.email.trim()) { setError('Please enter your email'); return; }
     if (form.password !== form.confirmPassword) { setError('Passwords do not match'); return; }
-    if (form.password.length < 6) { setError('Password must be at least 6 characters'); return; }
+    if (form.password.length < 9) { setError('Password must be at least 9 characters'); return; }
+    if (!/[A-Z]/.test(form.password)) { setError('Password must contain at least one uppercase letter'); return; }
+    if (!/[0-9]/.test(form.password)) { setError('Password must contain at least one number'); return; }
+    if (!/[^A-Za-z0-9]/.test(form.password)) { setError('Password must contain at least one special character'); return; }
     setLoading(true);
     setError('');
     try {
@@ -149,6 +160,9 @@ export const SignupPage: React.FC = () => {
       setLoading(false);
     }
   };
+
+  const strengthChecks = getPasswordStrength(form.password);
+  const allMet = strengthChecks.every(c => c.met);
 
   return (
     <div className="min-h-screen bg-charcoal flex items-center justify-center p-6 py-12">
@@ -269,21 +283,53 @@ export const SignupPage: React.FC = () => {
                   <Lock size={11} /> Password
                 </label>
                 <div className="relative">
-                  <Input type={showPw ? 'text' : 'password'} placeholder="Min 6 chars" value={form.password} onChange={set('password')} required className="pr-10" />
+                  <Input
+                    type={showPw ? 'text' : 'password'}
+                    placeholder="Min 9 chars"
+                    value={form.password}
+                    onChange={set('password')}
+                    onFocus={() => setPasswordFocused(true)}
+                    onBlur={() => setPasswordFocused(false)}
+                    required
+                    className="pr-10"
+                  />
                   <button type="button" onClick={() => setShowPw(v => !v)} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
                     {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
+
+                {/* Password strength checklist */}
+                {(passwordFocused || form.password.length > 0) && (
+                  <div className="mt-2 p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-1.5">
+                    {strengthChecks.map(({ label, met }) => (
+                      <div key={label} className={`flex items-center gap-2 text-[11px] font-medium transition-colors ${met ? 'text-green-600' : 'text-gray-400'}`}>
+                        {met
+                          ? <CheckCircle size={13} className="text-green-500 shrink-0" />
+                          : <XCircle size={13} className="text-gray-300 shrink-0" />
+                        }
+                        {label}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-widest text-gray-400 flex items-center gap-1.5">
                   <Lock size={11} /> Confirm
                 </label>
                 <Input type={showPw ? 'text' : 'password'} placeholder="Repeat password" value={form.confirmPassword} onChange={set('confirmPassword')} required />
+                {form.confirmPassword.length > 0 && (
+                  <p className={`text-[11px] font-medium flex items-center gap-1 ${form.password === form.confirmPassword ? 'text-green-600' : 'text-red-400'}`}>
+                    {form.password === form.confirmPassword
+                      ? <><CheckCircle size={12} /> Passwords match</>
+                      : <><XCircle size={12} /> Passwords don't match</>
+                    }
+                  </p>
+                )}
               </div>
             </div>
 
-            <Button type="submit" fullWidth disabled={loading} className="mt-2">
+            <Button type="submit" fullWidth disabled={loading || !allMet} className="mt-2">
               {loading ? 'Creating account...' : 'Create Account'}
             </Button>
           </form>
